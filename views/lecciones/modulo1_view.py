@@ -113,14 +113,8 @@ def get_modulo1_view(router: Union[Router, str, None] = None, page: ft.Page = No
     )
 
     def toggle(e):
-        imagenes.visible = not imagenes.visible
-
-        if imagenes.visible:
-            boton_ayuda.content = ft.Text("Ocultar")
-        else:
-            boton_ayuda.content = ft.Text("Ayuda")
-
-        page.update()
+        
+        page.go('/respuestas?imagen=Media/Aa.png')
 
     boton_ayuda.on_click = toggle
     

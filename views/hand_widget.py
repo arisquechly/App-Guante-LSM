@@ -140,27 +140,78 @@ def get_hand_widget(states: Optional[List[bool]] = None) -> Tuple[ft.Column, Cal
         except Exception:
             pass
 
-    # --- Poner en verde (detectado) o blanco (no detectado) ---
-    def _pintar(cuadro, detectado):
-        cuadro.bgcolor = ft.Colors.GREEN_400 if detectado else ft.Colors.WHITE
+    # Refresca TODO el panel de una sola vez (eficiente: una update por ciclo).
+    def refrescar():
         try:
             panel.update()
         except Exception:
             pass
 
-    def set_pressure(i, detectado=True):
+    # --- Poner en verde (detectado) o blanco (no detectado) ---
+    # 'refrescar_ahora=False' deja el cambio listo sin redibujar todavia, para
+    # poder cambiar muchos y refrescar UNA vez al final (ver aplicar_resultado).
+    def _pintar(cuadro, detectado, refrescar_ahora=True):
+        cuadro.bgcolor = ft.Colors.GREEN_400 if detectado else ft.Colors.WHITE
+        if refrescar_ahora:
+            refrescar()
+
+    def set_pressure(i, detectado=True, refrescar_ahora=True):
         if 0 <= i < len(pressure_containers):
-            _pintar(pressure_containers[i], detectado)
+            _pintar(pressure_containers[i], detectado, refrescar_ahora)
 
-    def set_movement(detectado=True):
-        _pintar(movement_containers[0], detectado)
+    def set_movement(detectado=True, refrescar_ahora=True):
+        _pintar(movement_containers[0], detectado, refrescar_ahora)
 
-    def set_orientation(detectado=True):
-        _pintar(orientation_containers[0], detectado)
+    def set_orientation(detectado=True, refrescar_ahora=True):
+        _pintar(orientation_containers[0], detectado, refrescar_ahora)
+
+    def set_finger(i, doblado, correcto, refrescar_ahora=True):
+        """Pone el dedo i: posicion segun 'doblado', color segun 'correcto'."""
+        if not (0 <= i < 5):
+            return
+        _, visual = finger_containers[i]   # solo nos interesa el rectangulo visual
+        # Posicion: doblado -> baja (margen 40); estirado -> sube (margen 10).
+        visual.margin = ft.Margin(top=40 if doblado else 10)
+        # Color: verde si correcto, blanco si no (igual que los cuadritos).
+        visual.bgcolor = ft.Colors.GREEN_400 if correcto else ft.Colors.with_opacity(0.95, ft.Colors.WHITE)
+        if refrescar_ahora:
+            refrescar()
 
     # Se enganchan a toggle_fn para no cambiar el retorno (panel, toggle_fn).
     toggle_fn.set_pressure = set_pressure
     toggle_fn.set_movement = set_movement
     toggle_fn.set_orientation = set_orientation
+    toggle_fn.set_finger = set_finger
+    toggle_fn.refrescar = refrescar
 
     return panel, toggle_fn
+
+
+def aplicar_resultado(mano, datos):
+    """
+    Prende los cuadritos a partir del diccionario que devuelve el parser.
+
+    'mano'  = el toggle_fn que devuelve get_hand_widget (trae los set_*).
+    'datos' = diccionario del parser (parsear_linea).
+
+    SUBPASO 3.1: por ahora solo presion, movimiento y orientacion.
+    Los DEDOS se conectaran en el siguiente subpaso (3.2).
+    """
+    # Cambiamos TODO con refrescar_ahora=False (sin redibujar todavia)...
+
+    # Presion: un cuadrito por sensor.
+    for i, correcto in enumerate(datos["pres_correcta"]):
+        mano.set_pressure(i, correcto, refrescar_ahora=False)
+
+    # Movimiento y orientacion: un cuadrito cada uno.
+    mano.set_movement(datos["mov_correcto"], refrescar_ahora=False)
+    mano.set_orientation(datos["ori_correcta"], refrescar_ahora=False)
+
+    # Dedos: posicion segun flexion obtenida (doblado), color segun flexion correcta.
+    for i in range(5):
+        doblado = datos["flex_obtenida"][i]
+        correcto = datos["flex_correcta"][i]
+        mano.set_finger(i, doblado, correcto, refrescar_ahora=False)
+
+    # ...y refrescamos UNA sola vez todo el panel (mucho mas fluido).
+    mano.refrescar()

@@ -250,7 +250,11 @@ def _loop_lectura() -> None:
         if dato:
             _ultimo_dato = time.monotonic()   # marca: el guante respondio (sirve para confirmar puerto)
             if _callback_lectura:
-                _callback_lectura(dato)
+                try:
+                    _callback_lectura(dato)
+                except Exception as e:
+                    # Un error en el callback NO debe matar el hilo lector.
+                    print(f"[bluetooth] Error en callback de lectura: {e}")
 
 
 def desconectar() -> None:

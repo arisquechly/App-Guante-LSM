@@ -1,7 +1,10 @@
 from typing import Union
+import asyncio
 import flet as ft
 from Router import Router
-from views.hand_widget import get_hand_widget
+from views.hand_widget import get_hand_widget, aplicar_resultado
+from services.parser_guante import parsear_linea
+from services import bluetooth_serial as bt
 
 def get_respuestas_view(router: Union[Router, str, None] = None, page: ft.Page = None):
     imagen = "assets/Media/Aa.png"
@@ -55,9 +58,36 @@ def get_respuestas_view(router: Union[Router, str, None] = None, page: ft.Page =
 
     finger_states = [False, False, False, False, False]
 
-    hand_row, toggle_finger = get_hand_widget(finger_states)
+    hand_row, mano = get_hand_widget(finger_states)
 
-    toggle_finger(4, True) 
+    # --- ENTREGAR (parte 2): conectar el guante REAL a este widget ---
+    # El hilo lector NO puede pintar la pantalla (Flet solo actualiza desde su
+    # propio loop). Por eso el lector solo PARSEA y GUARDA el dato; un loop de
+    # la UI lo lee y pinta en el hilo correcto.
+    estado = {"datos": None}
+
+    def on_linea(linea):
+        # Corre en el HILO LECTOR: solo parsea y guarda (NO toca la pantalla).
+        print(linea)   # MODO PRUEBA: ver en la terminal lo que llega del guante
+        datos = parsear_linea(linea)
+        if datos:
+            estado["datos"] = datos
+
+    bt.iniciar_lectura(on_linea)
+
+    async def actualizar_ui():
+        # Corre en el LOOP de Flet (hilo principal): AQUI si se puede pintar.
+        while True:
+            datos = estado["datos"]
+            if datos is not None:
+                estado["datos"] = None        # consumir el dato
+                aplicar_resultado(mano, datos)
+            await asyncio.sleep(0.05)          # revisa ~20 veces por segundo
+
+    page.run_task(actualizar_ui)
+
+    # MODO PRUEBA (temporal): manda "A" al abrir para arrancar el streaming del micro.
+    bt.enviar_letra("A")
 
     body.controls.append(hand_row)
     return body

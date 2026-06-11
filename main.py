@@ -43,12 +43,14 @@ def main(page: ft.Page):
     bt.conectar()
     bt.iniciar_lectura(print)   # imprime en la terminal TODO lo que manda el guante (depuracion)
 
-    page.go('/bienvenido')
-    #page.go('/respuestas?imagen=assets/Media/Aa.png')
+    # --- MODO PRUEBA (temporal): arrancar directo en el Modulo 1 ---
+    # page.go('/bienvenido')
+    page.go('/lecciones/modulo1')
 
     page.bottom_appbar = NavBar(page)
 
-    asyncio.create_task(delay_page(page, DELAY_BIENVENIDO, '/home'))
+    # Desactivado en modo prueba (si no, a los 7s te manda a /home):
+    # asyncio.create_task(delay_page(page, DELAY_BIENVENIDO, '/home'))
 
 ft.run(
     main,

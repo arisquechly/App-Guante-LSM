@@ -2,6 +2,7 @@ import asyncio
 import flet as ft
 from routes import router
 from user_controls.app_bar import NavBar
+from services import bluetooth_serial as bt
 
 #Constants:
 #Delay_page:
@@ -33,7 +34,10 @@ def main(page: ft.Page):
     page.add(
         router.body
     )
-    
+
+    bt.conectar()
+    bt.iniciar_lectura(print)   # imprime en la terminal TODO lo que manda el guante (depuracion)
+
     page.go('/bienvenido')
 
     page.bottom_appbar = NavBar(page)

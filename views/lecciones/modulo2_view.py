@@ -1,6 +1,7 @@
 from typing import Union
 import flet as ft
 from Router import Router
+from services import bluetooth_serial as bt
 
 def get_modulo2_view(router: Union[Router, str, None] = None, page: ft.Page = None):
     body = ft.Column(
@@ -21,7 +22,7 @@ def get_modulo2_view(router: Union[Router, str, None] = None, page: ft.Page = No
                         aspect_ratio=1,
                         border_radius=10,
                         ink=True,
-                        on_click=lambda _: page.go('/lecciones/modulo1'),
+                        on_click=lambda _: bt.enviar_letra("A"),
                     ),
                     ft.Container(expand=True),
                 ],

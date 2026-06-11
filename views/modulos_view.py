@@ -39,7 +39,13 @@ def get_modulos_view(router: Union[Router, str, None] = None, page: ft.Page = No
                                 ft.Column(
                                     controls=[
                                         ft.Text("Modulo 1", size=18, weight=ft.FontWeight.BOLD, font_family="Krabby Patty"),
-                                        ft.Text("Descripción del módulo 1.", size=10),
+                                        ft.Text("Módulo de Aprendizaje 1: Vocales", size=10),
+                                        ft.Text("Bienvenido al primer módulo de aprendizaje. En esta sección conocerás y practicarás " \
+                                        "las vocales de la Lengua de Señas Mexicana (A, E, I, O y U). A través de ejemplos visuales y " \
+                                        "actividades interactivas, podrás familiarizarte con la posición correcta de la mano para cada " \
+                                        "vocal y reforzar tu aprendizaje mediante la práctica. El objetivo de este módulo es desarrollar " \
+                                        "una base sólida que facilite el aprendizaje de señas más complejas en etapas posteriores.", 
+                                        size=10),
                                     ],
                                     expand=True,
                                 )

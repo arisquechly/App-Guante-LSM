@@ -1,6 +1,7 @@
 from typing import Callable, Any
 import flet as ft
 from enum import Enum
+from urllib.parse import parse_qsl
 
 class DataStrategyEnum(Enum):
     QUERY = 0
@@ -13,6 +14,8 @@ class Router:
         self.page = None
         self.data_strategy = data_strategy
         self.routes = {}
+        self.data = {}
+        self.current_route = None
         self.body = ft.Container(
             expand=True, 
             image=ft.DecorationImage( 
@@ -29,15 +32,19 @@ class Router:
         self.routes.update(route_dictionary)
 
     def route_change(self, route):
-        _page = route.route.split("?")[0]
-        queries = route.route.split("?")[1:]
+        next_route = route.route.split("?")[0]
+        previous_route = self.current_route
+        self.current_route = route.route
+        query_string = route.route.split("?")[1] if "?" in route.route else ""
 
-        for item in queries:
-            key = item.split("=")[0]
-            value = item.split("=")[1]
+        self.data.clear()
+        if previous_route:
+            self.data['previous_route'] = previous_route
+
+        for key, value in parse_qsl(query_string, keep_blank_values=True):
             self.data[key] = value.replace('+', ' ')
 
-        self.body.content = self.routes[_page](self, self.page)
+        self.body.content = self.routes[next_route](self, self.page)
         self.body.update()
 
         if route.route == "/bienvenido" or route.route == "/felicidades":

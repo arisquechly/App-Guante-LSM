@@ -26,6 +26,11 @@ def main(page: ft.Page):
     page.theme = ft.Theme(
         font_family="Quicksand"
     )
+
+    page.window.width = 1080 / 3
+    page.window.height = 2340 / 3
+    page.window.resizable = False
+
     page.padding = 0
     page.update()
 
@@ -39,6 +44,7 @@ def main(page: ft.Page):
     bt.iniciar_lectura(print)   # imprime en la terminal TODO lo que manda el guante (depuracion)
 
     page.go('/bienvenido')
+    #page.go('/respuestas?imagen=assets/Media/Aa.png')
 
     page.bottom_appbar = NavBar(page)
 

@@ -57,7 +57,7 @@ def get_respuestas_view(router: Union[Router, str, None] = None, page: ft.Page =
 
     hand_row, toggle_finger = get_hand_widget(finger_states)
 
-    toggle_finger(4, True)  # Example: set thumb as pressed
+    toggle_finger(4, True) 
 
     body.controls.append(hand_row)
     return body

@@ -38,6 +38,8 @@ _leyendo = False
 _callback_lectura = None          # se recuerda para no perder la lectura al cambiar de puerto
 _candidatos: list[str] = []       # puertos a intentar (BT detectados + respaldo)
 _puerto_actual: str | None = None  # puerto abierto ahora mismo (y ultimo que funciono)
+_ultimo_dato = 0.0                 # marca de tiempo de la ultima linea recibida del guante
+_puerto_confirmado = False         # True cuando el guante ya respondio por el puerto actual
 
 
 # Mapeo EXPLICITO letra -> indice que espera el ATmega32.
@@ -160,6 +162,8 @@ def enviar_indice(indice: int) -> bool:
     letra. Asi el guante solo recibe letras reales, nunca un byte de prueba.
     Devuelve True si algun puerto acepto el envio.
     """
+    global _puerto_confirmado
+
     if not (0 <= indice <= 25):
         print(f"[bluetooth] Indice fuera de rango (0-25): {indice}")
         return False
@@ -170,24 +174,42 @@ def enviar_indice(indice: int) -> bool:
             print("[bluetooth] Sin conexion (guante apagado o puerto ocupado)")
             return False
 
-    # Orden de intento: el puerto actual primero, luego los demas candidatos.
+    # CAMINO RAPIDO: si ya confirmamos el puerto, manda directo (sin esperar respuesta).
+    if _puerto_confirmado and esta_conectado():
+        try:
+            _ser.write(bytes([indice]))
+            _ser.flush()
+            print(f">> Enviado indice {indice} (byte 0x{indice:02X}) por {_puerto_actual}")
+            return True
+        except Exception as e:
+            print(f"[bluetooth] {_puerto_actual} se cayo ({e}); re-detectando puerto...")
+            _cerrar_puerto()
+            _puerto_confirmado = False
+            # cae a la deteccion de abajo
+
+    # DETECCION (una sola vez): el puerto SALIENTE acepta la escritura; el
+    # ENTRANTE lanza SerialTimeoutException. Nos quedamos con el primero que
+    # acepte y marcamos _puerto_confirmado, para NO volver a rotar (eso era lo
+    # que abria/cerraba puertos sin parar y desconectaba todo).
     orden = []
     for c in [_puerto_actual, *_candidatos]:
         if c and c not in orden:
             orden.append(c)
 
     for cand in orden:
-        # Cambiar de puerto solo si hace falta.
         if not esta_conectado() or _puerto_actual != cand:
             _cerrar_puerto()
+            time.sleep(0.3)   # dar tiempo a que el COM se libere antes de abrir otro
             if not _abrir(cand):
                 continue
         try:
             _ser.write(bytes([indice]))
-            _ser.flush()   # fuerza la salida inmediata del byte
+            _ser.flush()
+            _puerto_confirmado = True   # este es el saliente: nos quedamos aqui
+            print(f">> Enviado indice {indice} (byte 0x{indice:02X}) por {cand} [puerto confirmado]")
             return True
         except serial.SerialTimeoutException:
-            print(f"[bluetooth] {cand} no acepta escritura (¿puerto equivocado?), probando otro...")
+            print(f"[bluetooth] {cand} es el entrante (no escribe), probando el otro...")
             _cerrar_puerto()
             continue
         except Exception as e:
@@ -215,6 +237,7 @@ def iniciar_lectura(on_dato) -> None:
 
 
 def _loop_lectura() -> None:
+    global _ultimo_dato
     while _leyendo:
         if not esta_conectado():
             time.sleep(0.1)   # puerto cerrado un momento (cambio de puerto); reintenta
@@ -224,8 +247,10 @@ def _loop_lectura() -> None:
         except Exception:
             time.sleep(0.1)   # puerto se cerro mientras leiamos; reintenta sin morir
             continue
-        if dato and _callback_lectura:
-            _callback_lectura(dato)
+        if dato:
+            _ultimo_dato = time.monotonic()   # marca: el guante respondio (sirve para confirmar puerto)
+            if _callback_lectura:
+                _callback_lectura(dato)
 
 
 def desconectar() -> None:

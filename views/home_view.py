@@ -41,16 +41,22 @@ def get_home_view(router: Union[Router, str, None] = None, page: ft.Page = None)
                     ft.Container(
                         content=ft.Column(
                             controls=[
-                                ft.Text("Mundo Guante", size=24, weight=ft.FontWeight.BOLD, font_family="Krabby Patty"),
+                                ft.Text("Mundo Guante", 
+                                        size=24, 
+                                        weight=ft.FontWeight.BOLD, 
+                                        font_family="Krabby Patty"),
                                 ft.Row(
                                     controls=[
-                                        ft.Image(src="assets/Media/LogoSinFondo.png", fit=ft.BoxFit.CONTAIN, width=120, height=120),
-                                        ft.Text("Aprende y practica Lengua de Señas Mexicana de forma interactiva. Esta aplicación se conecta " \
-                                        "con un guante inteligente equipado con sensores que detectan los movimientos y posiciones de la mano. " \
-                                        "Los gestos realizados por el usuario son reconocidos y mostrados en tiempo real, permitiendo practicar " \
-                                        "señas, recibir retroalimentación inmediata y reforzar el aprendizaje de manera dinámica. El proyecto " \
-                                        "busca facilitar el acceso al aprendizaje de la Lengua de Señas Mexicana mediante una herramienta " \
-                                        "tecnológica intuitiva, portátil y fácil de usar.", size=10, expand=True, text_align=ft.TextAlign.JUSTIFY),
+                                        ft.Image(src="assets/Media/LogoSinFondo.png", 
+                                                 fit=ft.BoxFit.CONTAIN, 
+                                                 width=120, 
+                                                 height=120),
+                                        ft.Text("Aprende Lengua de Señas Mexicana de forma práctica e interactiva. Conecta tu guante " \
+                                        "inteligente y recibe retroalimentación en tiempo real mientras practicas señas, fortaleces tus " \
+                                        "habilidades y avanzas a tu propio ritmo.", 
+                                        size=10, 
+                                        expand=True, 
+                                        text_align=ft.TextAlign.LEFT),
                                     ],
                                     vertical_alignment=ft.CrossAxisAlignment.START,
                                 ),
@@ -58,8 +64,7 @@ def get_home_view(router: Union[Router, str, None] = None, page: ft.Page = None)
                         ),
                         bgcolor=ft.Colors.with_opacity(0.8, ft.Colors.WHITE),
                         expand=True,
-                        padding=20,
-                        aspect_ratio=2,
+                        padding=5,
                         border_radius=10,
                     )
                 ],

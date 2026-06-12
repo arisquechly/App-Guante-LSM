@@ -1,4 +1,5 @@
 import asyncio
+import time
 import flet as ft
 from views.hand_widget import get_hand_widget, aplicar_resultado
 from services.parser_guante import parsear_linea
@@ -25,14 +26,35 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
         construir_leccion(["A","E","I","O","U"], page, router, "Modulo 1: Vocales")
     """
     # Estado: dato del guante, en que letra vamos, y cuantas se lograron BIEN.
-    estado = {"datos": None, "indice": 0, "completadas": 0}
+    estado = {"datos": None, "indice": 0, "completadas": 0, "bloqueo_hasta": 0.0}
 
     info = _info(letras[estado["indice"]])
 
-    # Barra de progreso (avanza conforme pasas de letra).
-    barra = ft.ProgressBar(
-        value=0, height=10, color=ft.Colors.WHITE, bgcolor=ft.Colors.WHITE24, expand=True
+    # Barra de progreso con Don Cangrejo caminando en la punta que avanza.
+    ANCHO_BARRA = 300
+    TAM_CANGREJO = 45
+
+    barra_track = ft.Container(   # la pista (fondo gris), todo el ancho
+        width=ANCHO_BARRA, height=10, bgcolor=ft.Colors.WHITE24, border_radius=5, left=0, bottom=0,
     )
+    barra_relleno = ft.Container(  # la parte llena (crece con el progreso)
+        width=0, height=10, bgcolor=ft.Colors.WHITE, border_radius=5, left=0, bottom=0,
+    )
+    cangrejo = ft.Image(           # Don Cangrejo, parado en la punta
+        src="assets/Media/DonCangrejoCaminando.png",
+        width=TAM_CANGREJO, height=TAM_CANGREJO, left=0, bottom=0,
+    )
+    # Stack = apila las 3 capas: pista, relleno y el cangrejo encima.
+    barra = ft.Stack(
+        width=ANCHO_BARRA, height=TAM_CANGREJO,
+        controls=[barra_track, barra_relleno, cangrejo],
+    )
+
+    def set_progreso(p):
+        # p va de 0.0 a 1.0: ajusta el ancho del relleno y mueve al cangrejo a la punta.
+        barra_relleno.width = ANCHO_BARRA * p
+        x = ANCHO_BARRA * p - TAM_CANGREJO / 2          # centrar al cangrejo en la punta
+        cangrejo.left = max(0, min(x, ANCHO_BARRA - TAM_CANGREJO))  # que no se salga
 
     # ---------- PANTALLA PRINCIPAL: caja con la letra + botones ----------
     titulo_letra = ft.Text(
@@ -42,9 +64,9 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
         width=150, height=150, bgcolor=ft.Colors.WHITE, border_radius=10,
         alignment=ft.Alignment.CENTER, content=titulo_letra,
     )
-    boton_ayuda = ft.ElevatedButton(content=ft.Text("Ayuda"), bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK)
-    boton_siguiente = ft.ElevatedButton(content=ft.Text("Siguiente"), bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK)
-    boton_salir = ft.ElevatedButton(content=ft.Text("Salir"), bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK)
+    boton_ayuda = ft.ElevatedButton(content=ft.Text("Ayuda", size=11), bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK, height=32)
+    boton_siguiente = ft.ElevatedButton(content=ft.Text("Siguiente", size=11), bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK, height=32)
+    boton_salir = ft.ElevatedButton(content=ft.Text("Salir", size=11), bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK, height=32)
     principal = ft.Column(
         visible=True,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -53,7 +75,10 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
                     [
                     caja_letra,
                     boton_ayuda
-                    ]
+                    ],
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    spacing=40,
             ),
             ft.Row(
                 [
@@ -72,11 +97,25 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
     ayuda = ft.Column(
         visible=False,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        controls=[imagen_letra, hand_row, boton_ocultar],
+        controls=[
+            ft.Row([imagen_letra], alignment=ft.MainAxisAlignment.CENTER),
+            hand_row,
+            boton_ocultar,
+        ],
     )
 
     # ---------- PANTALLA DE RESUMEN (al terminar todas) ----------
-    container_resumen = ft.Text("", size=24, weight=ft.FontWeight.BOLD, font_family="Krabby Patty")
+    texto_resumen = ft.Text(
+        "", size=22, weight=ft.FontWeight.BOLD,
+        text_align=ft.TextAlign.CENTER,
+    )
+    caja_resumen = ft.Container(
+        content=texto_resumen,
+        bgcolor=ft.Colors.WHITE,
+        padding=30,
+        border_radius=15,
+        alignment=ft.Alignment.CENTER,
+    )
 
     boton_inicio = ft.ElevatedButton(
         content=ft.Text("Inicio"),
@@ -87,8 +126,16 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
     resumen = ft.Column(
         visible=False,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        controls=[container_resumen, boton_inicio],
+        controls=[caja_resumen, boton_inicio],
     )
+
+    # ---------- FELICIDADES: GIF a PANTALLA COMPLETA (tapa todo, como bienvenido) ----------
+    felicidades = ft.Container(
+        visible=False,
+        expand=True,
+        image=ft.DecorationImage(src="assets/Media/felicidades.gif", fit=ft.BoxFit.COVER),
+    )
+
     # ---------- Cambiar entre pantallas ----------
     def mostrar_ayuda(e):
         principal.visible = False
@@ -113,12 +160,24 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
     boton_salir.on_click = salir
     boton_inicio.on_click = lambda e: page.go("/modulos")
 
-    # ---------- Mostrar resumen al terminar ----------
-    def mostrar_resumen():
+    # ---------- Terminar el modulo: felicidades unos segundos, luego el resumen ----------
+    async def terminar_modulo():
+        # 1) Felicidades a pantalla completa (oculta tambien la barra inferior).
         principal.visible = False
         ayuda.visible = False
+        felicidades.visible = True
+        if page.bottom_appbar is not None:
+            page.bottom_appbar.visible = False
+        page.update()
+
+        await asyncio.sleep(4)   # felicidades por 4 segundos (no bloquea la app)
+
+        # 2) Resumen (regresa la barra inferior).
+        felicidades.visible = False
+        if page.bottom_appbar is not None:
+            page.bottom_appbar.visible = True
         resumen.visible = True
-        container_resumen.value = f"Completaste {estado['completadas']} de {len(letras)} letras"
+        texto_resumen.value = f"Completaste {estado['completadas']} de {len(letras)} letras"
         page.update()
 
     # ---------- Avanzar de letra ----------
@@ -129,9 +188,9 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
 
         estado["indice"] += 1
 
-        # Si ya no hay mas letras -> resumen.
+        # Si ya no hay mas letras -> felicidades + resumen (en esta misma vista).
         if estado["indice"] >= len(letras):
-            mostrar_resumen()
+            page.run_task(terminar_modulo)
             return
 
         # Cargar la siguiente letra: caja, imagen, barra y mandarla al guante.
@@ -139,7 +198,7 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
         info_n = _info(nueva)
         titulo_letra.value = info_n["titulo"]
         imagen_letra.src = info_n["imagen"]
-        barra.value = estado["indice"] / len(letras)
+        set_progreso(estado["indice"] / len(letras))
         bt.enviar_letra(nueva)
         page.update()
 
@@ -155,12 +214,21 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
 
     bt.iniciar_lectura(on_linea)
 
+    def gesto_correcto(datos):
+        # "Todo el gesto": dedos + presion + movimiento + orientacion, todo bien.
+        return (all(datos["flex_correcta"]) and all(datos["pres_correcta"])
+                and datos["mov_correcto"] and datos["ori_correcta"])
+
     async def actualizar_ui():
         while True:
             datos = estado["datos"]
             if datos is not None:
                 estado["datos"] = None
                 aplicar_resultado(mano, datos)
+                # Auto-avanzar si TODO coincide y ya paso el "respiro" anti-rebote.
+                if gesto_correcto(datos) and time.monotonic() >= estado["bloqueo_hasta"]:
+                    estado["bloqueo_hasta"] = time.monotonic() + 1.5   # respiro mientras el micro cambia de letra
+                    avanzar(True)
             await asyncio.sleep(0.05)
 
     page.run_task(actualizar_ui)
@@ -168,7 +236,7 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
     # Manda la primera letra al entrar.
     bt.enviar_letra(letras[estado["indice"]])
 
-    body = ft.Column(
+    contenido = ft.Column(
         expand=True,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         margin=ft.Margin(left=20, right=20, bottom=20, top=20),
@@ -181,5 +249,11 @@ def construir_leccion(letras, page: ft.Page, router=None, titulo_modulo="Modulo"
             ayuda,
             resumen,
         ],
+    )
+
+    # 'felicidades' va ENCIMA de todo (Stack) para tapar la pantalla completa.
+    body = ft.Stack(
+        expand=True,
+        controls=[contenido, felicidades],
     )
     return body

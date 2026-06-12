@@ -75,7 +75,9 @@ def get_modulos_view(router: Union[Router, str, None] = None, page: ft.Page = No
                                 ft.Column(
                                     controls=[
                                         ft.Text("Modulo 2", size=18, weight=ft.FontWeight.BOLD, font_family="Krabby Patty"),
-                                        ft.Text("Descripción del módulo 2.", size=10),
+                                        ft.Text("Módulo de Práctica de Abecedario: Practica las letras del abecedario en " \
+                                        "Lengua de Señas Mexicana.", 
+                                        size=8),
                                     ],
                                     expand=True,
                                 )
@@ -109,7 +111,9 @@ def get_modulos_view(router: Union[Router, str, None] = None, page: ft.Page = No
                                 ft.Column(
                                     controls=[
                                         ft.Text("Modulo 3", size=18, weight=ft.FontWeight.BOLD, font_family="Krabby Patty"),
-                                        ft.Text("Descripción del módulo 3.", size=10),
+                                        ft.Text("Módulo de Práctica de Abecedario: Practica las letras del abecedario en " \
+                                        "Lengua de Señas Mexicana.", 
+                                        size=8),
                                     ],
                                     expand=True,
                                 )
@@ -143,7 +147,9 @@ def get_modulos_view(router: Union[Router, str, None] = None, page: ft.Page = No
                                 ft.Column(
                                     controls=[
                                         ft.Text("Modulo 4", size=18, weight=ft.FontWeight.BOLD, font_family="Krabby Patty"),
-                                        ft.Text("Descripción del módulo 4.", size=10),
+                                        ft.Text("Módulo de Práctica de Abecedario: Practica las letras del abecedario en " \
+                                        "Lengua de Señas Mexicana.", 
+                                        size=8),
                                     ],
                                     expand=True,
                                 )
@@ -176,8 +182,10 @@ def get_modulos_view(router: Union[Router, str, None] = None, page: ft.Page = No
                                 ),
                                 ft.Column(
                                     controls=[
-                                        ft.Text("Modulo 5", size=18, weight=ft.FontWeight.BOLD, font_family="Krabby Patty"),
-                                        ft.Text("Descripción del módulo 5.", size=10),
+                                        ft.Text("Selección de letra", size=18, weight=ft.FontWeight.BOLD, font_family="Krabby Patty"),
+                                        ft.Text("Selecciona la letra que deseas practicar y perfecciona tu técnica a tu propio ritmo. " \
+                                        "Enfocarte en señas específicas, recibe retroalimentación inmediata y " \
+                                        "refuerza aquellas letras que requieran mayor práctica.", size=8),
                                     ],
                                     expand=True,
                                 )

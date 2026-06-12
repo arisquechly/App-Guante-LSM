@@ -6,7 +6,8 @@ pressed_names = ["P1", "P2", "P3"]
 movement_names = ["Movimiento"]
 orientation_names = ["Orientación"]
 
-def get_hand_widget(states: Optional[List[bool]] = None) -> Tuple[ft.Column, Callable[[int, Optional[bool]], None]]:
+def get_hand_widget(states: Optional[List[bool]] = None, solo_dedos: bool = False) -> Tuple[ft.Column, Callable[[int, Optional[bool]], None]]:
+    # solo_dedos=True -> muestra UNICAMENTE los dedos (sin presion/movimiento/orientacion).
     if states is None:
         states = [False] * 5
 
@@ -110,16 +111,21 @@ def get_hand_widget(states: Optional[List[bool]] = None) -> Tuple[ft.Column, Cal
         )
     orientation_row = ft.Row(controls=orientation_controls, alignment=ft.MainAxisAlignment.CENTER)
 
-    # Apila la presion arriba y los dedos abajo.
-    panel = ft.Column(
-        controls=[
+    # Para calibracion solo queremos los dedos; para la leccion, todo.
+    if solo_dedos:
+        contenido_panel = [finger_row]
+    else:
+        contenido_panel = [
             ft.Row(
                 controls=[
-                    pressure_row, 
+                    pressure_row,
                     movement_row,
                     orientation_row,
                 ]),
-            finger_row],
+            finger_row,
+        ]
+    panel = ft.Column(
+        controls=contenido_panel,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
     )
 
@@ -165,23 +171,28 @@ def get_hand_widget(states: Optional[List[bool]] = None) -> Tuple[ft.Column, Cal
     def set_orientation(detectado=True, refrescar_ahora=True):
         _pintar(orientation_containers[0], detectado, refrescar_ahora)
 
-    def set_finger(i, doblado, correcto, refrescar_ahora=True):
-        """Pone el dedo i: posicion segun 'doblado', color segun 'correcto'."""
+    def set_finger_color(i, doblado, color, refrescar_ahora=True):
+        """Pone el dedo i: posicion segun 'doblado' y un color directo (verde/gris/etc.)."""
         if not (0 <= i < 5):
             return
         _, visual = finger_containers[i]   # solo nos interesa el rectangulo visual
         # Posicion: doblado -> baja (margen 40); estirado -> sube (margen 10).
         visual.margin = ft.Margin(top=40 if doblado else 10)
-        # Color: verde si correcto, blanco si no (igual que los cuadritos).
-        visual.bgcolor = ft.Colors.GREEN_400 if correcto else ft.Colors.with_opacity(0.95, ft.Colors.WHITE)
+        visual.bgcolor = color
         if refrescar_ahora:
             refrescar()
+
+    def set_finger(i, doblado, correcto, refrescar_ahora=True):
+        """Verde si correcto, blanco si no; posicion segun 'doblado'."""
+        color = ft.Colors.GREEN_400 if correcto else ft.Colors.with_opacity(0.95, ft.Colors.WHITE)
+        set_finger_color(i, doblado, color, refrescar_ahora)
 
     # Se enganchan a toggle_fn para no cambiar el retorno (panel, toggle_fn).
     toggle_fn.set_pressure = set_pressure
     toggle_fn.set_movement = set_movement
     toggle_fn.set_orientation = set_orientation
     toggle_fn.set_finger = set_finger
+    toggle_fn.set_finger_color = set_finger_color
     toggle_fn.refrescar = refrescar
 
     return panel, toggle_fn
